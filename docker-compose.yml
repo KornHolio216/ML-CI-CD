@@ -3,7 +3,7 @@ services:
     build: .
     container_name: fastapi-ml-api-compose
     ports:
-      - "8000:8000"
+      - "8000:8080"
     depends_on:
       - mongodb
     networks:

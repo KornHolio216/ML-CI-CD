@@ -1,19 +1,34 @@
-# LAB03 - API do serwowania modelu ML
+# FastAPI ML API
 
-Projekt laboratoryjny z przedmiotu **Nowoczesne Technologie Przetwarzania Danych**.
-Celem projektu jest przygotowanie prostego API w **FastAPI** do serwowania modelu ML, przetestowanie endpointów oraz zwracanie predykcji w formacie JSON.
+To repozytorium przygotowałem w ramach laboratoriów z przedmiotu **Nowoczesne Technologie Przetwarzania Danych**, ale potraktowałem je też jako praktyczny projekt pokazujący, jak wystawić model ML przez API, skonteneryzować aplikację i wdrożyć ją w chmurze.
 
-## Zakres projektu
+W projekcie zbudowałem aplikację w **FastAPI**, dodałem endpoint do predykcji, przygotowałem środowisko w **Dockerze**, uruchomiłem całość przez **Docker Compose** i dostosowałem aplikację do wdrożenia na **Google Cloud Run**.
 
-W projekcie zaimplementowano:
+Model udostępniany przez API to prosty klasyfikator oparty na `LogisticRegression`, przygotowany jako demonstracja serwowania predykcji w aplikacji webowej.
 
-- endpoint główny `GET /`,
-- endpoint kontrolny `GET /health`,
-- endpoint informacyjny `GET /info`,
-- endpoint predykcji `POST /predict`,
+## Co pokazuje ten projekt
+
+W tym projekcie zaimplementowałem:
+
+- API w **FastAPI** do serwowania modelu ML,
+- endpointy `GET /`, `GET /health`, `GET /info` i `POST /predict`,
 - walidację danych wejściowych przy użyciu **Pydantic**,
-- prosty model klasyfikacyjny **LogisticRegression** z biblioteki **scikit-learn**,
-- testy działania w **Postmanie** oraz przy użyciu **cURL**.
+- prosty model klasyfikacyjny oparty na **LogisticRegression**,
+- konteneryzację aplikacji w **Dockerze**,
+- obsługę zmiennej środowiskowej `APP_ENV`,
+- konfigurację pod wdrożenie na **Google Cloud Run**.
+
+## Technologie
+
+- Python
+- FastAPI
+- Uvicorn
+- scikit-learn
+- NumPy
+- Joblib
+- Docker
+- Docker Compose
+- Google Cloud Run
 
 ## Struktura projektu
 
@@ -21,43 +36,40 @@ W projekcie zaimplementowano:
 lab03ntpd/
 ├── app.py
 ├── requirements.txt
+├── Dockerfile
+├── docker-compose.yml
+├── .dockerignore
 ├── README.md
 └── artifacts/
     └── model_v1.joblib
 ```
 
-## Wymagania
+## Uruchomienie lokalne
 
-- Python 3.13
-- pip
-- system Windows / Linux / macOS
+### 1. Utworzenie i aktywacja środowiska wirtualnego
 
-## Utworzenie i aktywacja środowiska wirtualnego
-
-Zalecana nazwa środowiska w tym projekcie: `.venv`.
-
-### Windows PowerShell
+#### Windows PowerShell
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
 
-### Linux / macOS
+#### Linux / macOS
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-## Instalacja zależności
+### 2. Instalacja zależności
 
 ```bash
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-## Uruchomienie aplikacji
+### 3. Uruchomienie aplikacji
 
 ```bash
 uvicorn app:app --reload
@@ -68,46 +80,36 @@ Po uruchomieniu aplikacja będzie dostępna pod adresami:
 - `http://127.0.0.1:8000/`
 - `http://127.0.0.1:8000/docs`
 
-## Opis endpointów
-
-### `GET /`
-Zwraca prostą wiadomość potwierdzającą działanie aplikacji.
-
-Przykładowa odpowiedź:
-
-```json
-{
-  "message": "API dziala"
-}
-```
+## Endpointy
 
 ### `GET /health`
-Zwraca informację o stanie działania serwera.
 
-Przykładowa odpowiedź:
+Zwracam status działania aplikacji oraz aktywne środowisko uruchomienia.
 
 ```json
 {
-  "status": "ok"
+  "status": "ok",
+  "app_env": "development"
 }
 ```
 
 ### `GET /info`
-Zwraca podstawowe informacje o modelu.
 
-Przykładowa odpowiedź:
+Zwracam podstawowe informacje o modelu oraz środowisku.
 
 ```json
 {
   "model_type": "LogisticRegression",
   "number_of_features": 2,
   "classes": ["klasa_0", "klasa_1"],
-  "model_path": "artifacts/model_v1.joblib"
+  "model_path": "artifacts/model_v1.joblib",
+  "app_env": "development"
 }
 ```
 
 ### `POST /predict`
-Przyjmuje dane wejściowe w formacie JSON i zwraca predykcję modelu.
+
+Przyjmuję dane wejściowe w formacie JSON i zwracam predykcję modelu.
 
 Przykładowe dane wejściowe:
 
@@ -129,105 +131,22 @@ Przykładowa odpowiedź:
   "input_data": {
     "feature_1": 1.0,
     "feature_2": 1.1
-  }
+  },
+  "app_env": "development"
 }
 ```
 
-## Testowanie endpointów
+## Szybkie testy
 
-### Uwaga dla Windows PowerShell
-
-W PowerShellu należy używać polecenia `curl.exe`, ponieważ samo `curl` bywa mapowane na `Invoke-WebRequest` i może działać inaczej niż klasyczny cURL.
-
-### Test `GET /`
-
-```powershell
-curl.exe http://127.0.0.1:8000/
-```
-
-### Test `GET /health`
+### Windows PowerShell
 
 ```powershell
 curl.exe http://127.0.0.1:8000/health
-```
-
-### Test `GET /info`
-
-```powershell
 curl.exe http://127.0.0.1:8000/info
-```
-
-### Test `POST /predict`
-
-```powershell
 curl.exe --% -X POST http://127.0.0.1:8000/predict -H "Content-Type: application/json" -d "{\"feature_1\": 1.0, \"feature_2\": 1.1}"
 ```
 
-### Test błędu walidacji
-
-Przykład wysłania niepełnych danych wejściowych:
-
-```powershell
-curl.exe --% -X POST http://127.0.0.1:8000/predict -H "Content-Type: application/json" -d "{\"feature_1\": 1.0}"
-```
-
-Dla takiego żądania FastAPI powinno zwrócić błąd walidacji `422 Unprocessable Entity`, ponieważ brakuje pola `feature_2`.
-
-## Uruchomienie z parametrami zbliżonymi do produkcyjnych
-
-Przykład uruchomienia:
-
-```bash
-uvicorn app:app --host 0.0.0.0 --port 8000
-```
-
-Wariant z większą liczbą workerów:
-
-```bash
-uvicorn app:app --host 0.0.0.0 --port 8000 --workers 2
-```
-
-## Wykorzystane biblioteki
-
-- fastapi
-- uvicorn
-- scikit-learn
-- numpy
-- joblib
-- pydantic
-
-## Wnioski
-
-Projekt realizuje wszystkie podstawowe wymagania laboratorium:
-
-- aplikacja API została uruchomiona poprawnie,
-- model ML został załadowany i udostępniony przez endpoint `/predict`,
-- przygotowano dodatkowe endpointy `/info` i `/health`,
-- obsłużono walidację danych wejściowych,
-- wykonano testy zarówno w Postmanie, jak i przy użyciu cURL.
-
-
-# LAB04 - Docker i konteneryzacja modelu ML
-
-W ramach kolejnego laboratorium projekt został rozszerzony o konteneryzację aplikacji przy użyciu **Dockera**.  
-Celem tej części projektu było przygotowanie obrazu Dockera z aplikacją ML z poprzednich zajęć, uruchomienie kontenera, przetestowanie endpointów oraz skonfigurowanie środowiska wieloserwisowego.
-
-## Dodatkowe pliki projektu
-
-Po rozszerzeniu projektu repozytorium zawiera:
-
-```text
-lab03ntpd/
-├── app.py
-├── requirements.txt
-├── Dockerfile
-├── docker-compose.yml
-├── README.md
-└── artifacts/
-    └── model_v1.joblib
-```
-
-## Uruchomienie aplikacji za pomocą Dockera
+## Docker
 
 ### Budowa obrazu
 
@@ -238,85 +157,81 @@ docker build -t fastapi-ml-api .
 ### Uruchomienie kontenera
 
 ```bash
-docker run -d -p 8000:8000 --name fastapi-ml-api-container fastapi-ml-api
+docker run -d -p 8000:8080 --name fastapi-ml-api-container fastapi-ml-api
 ```
 
-### Sprawdzenie działania
-
-```bash
-docker ps
-```
-
-Po uruchomieniu aplikacja będzie dostępna pod adresem:
-
-- `http://127.0.0.1:8000/`
-- `http://127.0.0.1:8000/docs`
-
-Przykładowy test endpointu:
-
-```bash
-curl http://127.0.0.1:8000/health
-```
-
-## Uruchomienie aplikacji za pomocą Docker Compose
-
-### Start usług
+### Docker Compose
 
 ```bash
 docker compose up -d --build
-```
-
-### Sprawdzenie uruchomionych usług
-
-```bash
 docker compose ps
-```
-
-W aktualnej konfiguracji uruchamiane są dwa serwisy:
-
-- `api` – aplikacja FastAPI z modelem ML,
-- `mongodb` – dodatkowy serwis działający w tej samej sieci dockerowej.
-
-### Zatrzymanie środowiska
-
-```bash
 docker compose down
 ```
 
-Po uruchomieniu aplikacja będzie dostępna na porcie `8000`, a dodatkowy serwis MongoDB na porcie `27017`.
+W konfiguracji `docker-compose.yml` uruchamiam:
+- `api` – aplikację FastAPI z modelem ML,
+- `mongodb` – dodatkowy serwis w tej samej sieci dockerowej.
 
-## Konfiguracja parametrów aplikacji
+## Zmienne środowiskowe
 
-W aktualnej wersji projektu aplikacja nie wymaga definiowania własnych zmiennych środowiskowych do działania.  
-Najważniejsze parametry konfiguracyjne wynikają z plików `Dockerfile` oraz `docker-compose.yml`.
+Dodałem obsługę zmiennej środowiskowej `APP_ENV`, dzięki czemu aplikacja może działać w różnych środowiskach bez zmiany kodu.
 
-### Najważniejsze ustawienia
+```python
+APP_ENV = os.getenv("APP_ENV", "development")
+```
 
-- aplikacja HTTP nasłuchuje na porcie `8000`,
-- kontener API mapuje port `8000:8000`,
-- serwis MongoDB mapuje port `27017:27017`,
-- oba serwisy działają w tej samej sieci dockerowej.
+Przykład uruchomienia lokalnego:
 
-### Zmienne środowiskowe
+### Windows PowerShell
 
-W tej wersji projektu nie zdefiniowano własnych zmiennych środowiskowych, ponieważ aplikacja działa poprawnie bez dodatkowej konfiguracji.  
-Jeśli projekt byłby dalej rozwijany, do zmiennych środowiskowych można byłoby przenieść na przykład:
+```powershell
+$env:APP_ENV="development"
+uvicorn app:app --reload
+```
 
-- numer portu aplikacji,
-- nazwę hosta,
-- dane połączenia do bazy danych,
-- tryb uruchomienia aplikacji.
+### Linux / macOS
 
-Takie podejście ułatwia późniejszą rozbudowę projektu i dostosowanie konfiguracji do różnych środowisk.
+```bash
+APP_ENV=development uvicorn app:app --reload
+```
 
-## Wymagane zasoby
+## Deployment na Google Cloud Run
 
-Aplikacja jest lekka i do działania potrzebuje podstawowych zasobów:
+Projekt przygotowałem także pod wdrożenie na **Google Cloud Run**.
 
-- Python 3.13 lub środowisko Docker,
-- biblioteki z pliku `requirements.txt`,
-- dostępu do portu `8000`,
-- pliku modelu `artifacts/model_v1.joblib`,
-- w przypadku Docker Compose: wolnego portu `27017` dla serwisu MongoDB.
+### Build i push obrazu
 
-Ze względu na prosty model ML i niewielką liczbę zależności projekt nie wymaga dużej ilości pamięci RAM ani mocy obliczeniowej.
+```bash
+docker build -t gcr.io/YOUR_PROJECT_ID/my-ml-app:v1 .
+docker push gcr.io/YOUR_PROJECT_ID/my-ml-app:v1
+```
+
+### Deploy usługi
+
+```bash
+gcloud run deploy my-ml-app \
+  --image gcr.io/YOUR_PROJECT_ID/my-ml-app:v1 \
+  --platform managed \
+  --region europe-central2 \
+  --allow-unauthenticated
+```
+
+### Konfiguracja środowiska w Cloud Run
+
+```bash
+gcloud run deploy my-ml-app \
+  --image gcr.io/YOUR_PROJECT_ID/my-ml-app:v2 \
+  --platform managed \
+  --region europe-central2 \
+  --allow-unauthenticated \
+  --set-env-vars APP_ENV=production \
+  --max-instances 2
+```
+
+## Konfiguracja portu
+
+Cloud Run przekazuje port aplikacji przez zmienną `PORT`, dlatego dostosowałem `Dockerfile` do takiego uruchomienia:
+
+```dockerfile
+CMD ["sh", "-c", "uvicorn app:app --host 0.0.0.0 --port ${PORT:-8080}"]
+```

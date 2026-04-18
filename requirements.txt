@@ -3,3 +3,4 @@ uvicorn[standard]==0.30.6
 scikit-learn>=1.7.2
 numpy==2.1.1
 joblib==1.4.2
+pytest==9.0.3

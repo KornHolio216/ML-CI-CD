@@ -15,7 +15,7 @@ class PredictionInput(BaseModel):
     feature_2: float
 
 app = FastAPI(
-    title="LAB03 - API do serwowania modelu ML",
+    title="API do serwowania modelu ML",
     description="Proste API w FastAPI do zwracania predykcji modelu.",
     version="1.0.0",
 )

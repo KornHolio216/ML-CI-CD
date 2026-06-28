@@ -28,3 +28,7 @@ jobs:
       - name: Run tests
         run: |
           pytest -v
+
+      - name: Compile Python files
+        run: |
+          python -m compileall app.py tests

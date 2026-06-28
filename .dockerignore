@@ -6,3 +6,6 @@ __pycache__
 .idea
 .env
 README.md
+data/raw
+AGENTS.md
+PROJECT-CONTEXT.md

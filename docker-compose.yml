@@ -2,10 +2,20 @@ services:
   api:
     build: .
     container_name: fastapi-ml-api-compose
+    environment:
+      APP_ENV: development
+      MONGODB_ENABLED: "true"
+      MONGODB_URI: mongodb://mongodb:27017
     ports:
       - "8000:8080"
     depends_on:
       - mongodb
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2).read()"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
     networks:
       - ml-network
 
@@ -14,9 +24,20 @@ services:
     container_name: fastapi-mongodb
     ports:
       - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - ml-network
 
 networks:
   ml-network:
     driver: bridge
+
+volumes:
+  mongodb-data:
